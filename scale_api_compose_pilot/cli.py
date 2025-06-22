@@ -9,6 +9,8 @@ from pathlib import Path
 
 from .manager import TrueNASDockerManager
 from .exceptions import TrueNASError
+from .discovery import discover_all, quick_discover
+from .setup_wizard import run_setup_wizard
 
 
 async def deploy_command(args):
@@ -99,6 +101,71 @@ async def delete_command(args):
         return 1
 
 
+def discover_command(args):
+    """Discover TrueNAS systems on the network."""
+    try:
+        print("🔍 Discovering TrueNAS Scale systems...")
+        systems = discover_all(timeout=args.timeout)
+        
+        if systems:
+            print(f"\n✅ Found {len(systems)} TrueNAS system(s):")
+            for i, system in enumerate(systems, 1):
+                print(f"  {i}. {system}")
+                print(f"     Web Interface: {system.web_url}")
+                print(f"     Services: {', '.join(system.services)}")
+        else:
+            print("❌ No TrueNAS systems found on the network.")
+            print("\n🔧 Troubleshooting:")
+            print("  - Ensure TrueNAS is running and on the same network")
+            print("  - Check that mDNS is enabled on TrueNAS")
+            print("  - Try increasing the timeout with --timeout")
+            return 1
+        
+        return 0
+    except Exception as e:
+        print(f"Error during discovery: {e}")
+        return 1
+
+
+def init_command(args):
+    """Run the setup wizard."""
+    try:
+        print("🚀 Starting Scale API Compose Pilot Setup Wizard...")
+        success = run_setup_wizard()
+        return 0 if success else 1
+    except Exception as e:
+        print(f"Setup wizard failed: {e}")
+        return 1
+
+
+async def validate_command(args):
+    """Validate connection to TrueNAS."""
+    try:
+        print("🔧 Validating TrueNAS connection...")
+        
+        async with TrueNASDockerManager() as manager:
+            print("✅ Connection established")
+            print("✅ Authentication successful")
+            
+            # Test API access
+            apps = await manager.list_apps()
+            print(f"✅ API access working - found {len(apps)} apps")
+            
+            print("\n🎉 All checks passed! Your setup is working correctly.")
+            return 0
+            
+    except TrueNASError as e:
+        print(f"❌ TrueNAS Error: {e}")
+        print("\n🔧 Troubleshooting:")
+        print("  - Run 'scale-compose init' to reconfigure")
+        print("  - Check your .env file settings")
+        print("  - Verify TrueNAS is accessible")
+        return 1
+    except Exception as e:
+        print(f"❌ Validation failed: {e}")
+        return 1
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="TrueNAS Docker Management CLI")
@@ -125,6 +192,16 @@ def main():
     delete_parser.add_argument('app_name', help='Name of the app to delete')
     delete_parser.add_argument('--force', action='store_true', help='Skip confirmation prompt')
     
+    # Discovery command
+    discover_parser = subparsers.add_parser('discover', help='Discover TrueNAS systems on network')
+    discover_parser.add_argument('--timeout', type=float, default=5.0, help='Discovery timeout in seconds')
+    
+    # Init command  
+    init_parser = subparsers.add_parser('init', help='Run setup wizard')
+    
+    # Validate command
+    validate_parser = subparsers.add_parser('validate', help='Validate TrueNAS connection')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -142,6 +219,12 @@ def main():
         return asyncio.run(stop_command(args))
     elif args.command == 'delete':
         return asyncio.run(delete_command(args))
+    elif args.command == 'discover':
+        return discover_command(args)
+    elif args.command == 'init':
+        return init_command(args)
+    elif args.command == 'validate':
+        return asyncio.run(validate_command(args))
     else:
         parser.print_help()
         return 1

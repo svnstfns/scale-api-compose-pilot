@@ -33,15 +33,15 @@ class TrueNASDockerManager:
             host: TrueNAS hostname/IP (defaults to TRUENAS-HOST env var)
             api_key: TrueNAS API key (defaults to TRUENAS-API-KEY env var)
         """
-        self.host = (host or os.getenv('TRUENAS-HOST', '')).replace('https://', '').replace('http://', '')
-        self.api_key = api_key or os.getenv('TRUENAS-API-KEY')
+        self.host = (host or os.getenv('TRUENAS_HOST', '')).replace('https://', '').replace('http://', '')
+        self.api_key = api_key or os.getenv('TRUENAS_API_KEY')
         self.client = None
         self.connected = False
         
         if not self.host:
-            raise ValueError("TrueNAS host must be provided via parameter or TRUENAS-HOST environment variable")
+            raise ValueError("TrueNAS host must be provided via parameter or TRUENAS_HOST environment variable")
         if not self.api_key:
-            raise ValueError("TrueNAS API key must be provided via parameter or TRUENAS-API-KEY environment variable")
+            raise ValueError("TrueNAS API key must be provided via parameter or TRUENAS_API_KEY environment variable")
         
     async def connect(self) -> bool:
         """
