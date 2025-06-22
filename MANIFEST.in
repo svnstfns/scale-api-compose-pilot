@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include requirements.txt
+include .env.example
+recursive-include scale_api_compose_pilot *.py
+recursive-include tests *.py
+recursive-include docs *.md
+global-exclude *.pyc
+global-exclude __pycache__
+prune legacy

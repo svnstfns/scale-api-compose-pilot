@@ -1,0 +1,50 @@
+FROM python:3.10-slim
+
+# Set build arguments and enable BuildKit cache features
+ARG BUILD_DATE=unknown
+ARG BUILDKIT_INLINE_CACHE=1
+
+# Set labels
+LABEL org.opencontainers.image.created=$BUILD_DATE
+LABEL org.opencontainers.image.title="VideoInventory"
+LABEL org.opencontainers.image.description="Video Inventory Management System with SQLite"
+
+# Install system dependencies - all in one RUN to reduce layers
+# Use --no-install-recommends to keep image smaller
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    curl \
+    sqlite3 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /app /db /logs /app/static /app/logs
+
+# Set working directory
+WORKDIR /app
+
+# Copy just requirements first for better layer caching
+COPY app/
+
+# Install Python dependencies in a single layer
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir ffmpeg-python
+
+# Copy only the needed files instead of everything
+COPY app/entrypoint.sh /app/
+COPY app/__init__.py /app/
+
+# Make entrypoint executable
+RUN chmod +x /app/entrypoint.sh \
+    && touch /app/__init__.py
+
+# Environment variables all in one ENV statement
+ENV PYTHONPATH=/app \
+    DB_PATH=/db/videoinventory.db \
+    LOG_DIR=/logs \
+    PYTHONUNBUFFERED=1
+
+# Expose port for web interface
+EXPOSE 80
+
+# Run the application
+ENTRYPOINT ["/app/entrypoint.sh"]

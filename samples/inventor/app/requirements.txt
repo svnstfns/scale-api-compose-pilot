@@ -1,0 +1,6 @@
+# Core dependencies
+fastapi==0.89.1
+uvicorn[standard]==0.20.0
+python-dotenv==0.19.2
+pydantic==1.10.8
+ffmpeg-python==0.2.0

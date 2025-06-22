@@ -1,0 +1,696 @@
+"""
+Utility functions for the VideoInventory web service.
+"""
+import os
+import logging
+from typing import List, Dict, Any
+
+# Path to log directory
+LOG_DIR_PATH = '/app/logs'
+
+def read_all_logs() -> str:
+    """
+    Reads and combines the content of all log files in the directory.
+
+    Returns:
+        Combined content of all log files.
+    """
+    log_content = []
+
+    if os.path.exists(LOG_DIR_PATH) and os.path.isdir(LOG_DIR_PATH):
+        for log_file in os.listdir(LOG_DIR_PATH):
+            log_file_path = os.path.join(LOG_DIR_PATH, log_file)
+            if os.path.isfile(log_file_path):
+                try:
+                    with open(log_file_path, 'r') as file:
+                        lines = file.readlines()
+                        for line in lines:
+                            log_content.append(f"[{log_file}] {line.strip()}")
+                except Exception as e:
+                    log_content.append(f"[Error reading {log_file}] {str(e)}")
+
+    if not log_content:
+        return "No logs found."
+
+    return "\n".join(log_content)
+
+def create_index_html() -> str:
+    """
+    Creates the Vue.js app HTML as a string.
+
+    Returns:
+        String containing the HTML for the Vue.js app.
+    """
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoInventory Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ecf0f1;
+            margin: 0;
+            padding: 0;
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background-color: #34495e;
+            border-radius: 5px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .tab.active {
+            background-color: #3498db;
+            border-radius: 5px;
+        }
+        .tab:hover:not(.active) {
+            background-color: #4a6b8c;
+        }
+        .panel {
+            background-color: #2c2c2c;
+            padding: 20px;
+            border-radius: 5px;
+            max-height: 70vh;
+            overflow: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+        }
+        .log-line {
+            padding: 2px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #34495e;
+        }
+        th {
+            background-color: #34495e;
+        }
+        tr:hover {
+            background-color: #3a3a3a;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-completed {
+            background-color: #27ae60;
+        }
+        .status-pending {
+            background-color: #f39c12;
+        }
+        .status-error {
+            background-color: #e74c3c;
+        }
+        .status-counting, .status-counted, .status-indexing {
+            background-color: #3498db;
+        }
+        .progress-container {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #34495e;
+            border-radius: 5px;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.5s;
+            border-radius: 10px;
+        }
+        .inventory-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #34495e;
+            border-radius: 5px;
+        }
+        .error-log {
+            color: #e74c3c;
+        }
+        .info-box {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric-card {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #34495e;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+        }
+        .search-box::placeholder {
+            color: #95a5a6;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-button {
+            background-color: #34495e;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+        }
+        .filter-button.active {
+            background-color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container">
+        <header>
+            <h1>VideoInventory Monitor</h1>
+        </header>
+
+        <div class="tabs">
+            <div class="tab" :class="{ active: activeTab === 'dashboard' }" @click="activeTab = 'dashboard'">Dashboard</div>
+            <div class="tab" :class="{ active: activeTab === 'sections' }" @click="activeTab = 'sections'">Sections</div>
+            <div class="tab" :class="{ active: activeTab === 'inventory' }" @click="activeTab = 'inventory'">Inventory</div>
+            <div class="tab" :class="{ active: activeTab === 'errors' }" @click="activeTab = 'errors'">Errors</div>
+            <div class="tab" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">Logs</div>
+        </div>
+
+        <!-- Dashboard Panel -->
+        <div v-if="activeTab === 'dashboard'" class="panel">
+            <h2>System Overview</h2>
+
+            <div class="progress-container">
+                <div>Overall Progress: {{ getOverallProgress() }}%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: getOverallProgress() + '%' }"></div>
+                </div>
+            </div>
+
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div>Total Sections</div>
+                    <div class="metric-value">{{ sectionStats.total || 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div>Completed</div>
+                    <div class="metric-value">{{ sectionStats.completed || 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div>In Progress</div>
+                    <div class="metric-value">{{ sectionStats.in_progress || 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div>Total Files</div>
+                    <div class="metric-value">{{ formatNumber(stats.total_files || 0) }}</div>
+                </div>
+                <div class="metric-card">
+                    <div>MP4 Files</div>
+                    <div class="metric-value">{{ formatNumber(stats.mp4_files || 0) }}</div>
+                </div>
+                <div class="metric-card">
+                    <div>Errors</div>
+                    <div class="metric-value">{{ stats.errors || 0 }}</div>
+                </div>
+            </div>
+
+            <h3>Processing Summary</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Count</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Counted sections</td>
+                        <td>{{ stats.counted_sections || 0 }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: ((stats.counted_sections || 0) / (sectionStats.total || 1) * 100) + '%' }"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Indexed sections</td>
+                        <td>{{ stats.indexed_sections || 0 }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: ((stats.indexed_sections || 0) / (sectionStats.total || 1) * 100) + '%' }"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Files indexed</td>
+                        <td>{{ stats.indexed_files || 0 }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: ((stats.indexed_files || 0) / (stats.total_files || 1) * 100) + '%' }"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Recent Activity</h3>
+            <div v-if="recentActivity.length === 0" class="info-box">
+                No recent activity recorded.
+            </div>
+            <div v-else>
+                <div v-for="(activity, index) in recentActivity" :key="index" class="info-box">
+                    {{ activity.timestamp }} - {{ activity.message }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sections Panel -->
+        <div v-if="activeTab === 'sections'" class="panel">
+            <h2>Sections Status</h2>
+
+            <input type="text" v-model="sectionSearch" placeholder="Search sections..." class="search-box">
+
+            <div class="filters">
+                <button 
+                    v-for="(value, key) in sectionFilters" 
+                    :key="key" 
+                    @click="toggleSectionFilter(key)" 
+                    :class="['filter-button', { active: value }]"
+                >
+                    {{ key }}
+                </button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Status</th>
+                        <th>Files</th>
+                        <th>Directories</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="section in filteredSections" :key="section.section_path">
+                        <td>{{ section.section_path }}</td>
+                        <td>
+                            <span class="status-badge" :class="'status-' + section.status.toLowerCase()">
+                                {{ section.status }}
+                            </span>
+                        </td>
+                        <td>{{ section.total_files || 'N/A' }}</td>
+                        <td>{{ section.total_directories || 'N/A' }}</td>
+                        <td>{{ formatTimestamp(section.updated_at) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Inventory Panel -->
+        <div v-if="activeTab === 'inventory'" class="panel">
+            <h2>File Inventory</h2>
+
+            <input type="text" v-model="inventorySearch" placeholder="Search inventory..." class="search-box">
+
+            <div class="filters">
+                <button 
+                    v-for="(value, key) in inventoryFilters" 
+                    :key="key" 
+                    @click="toggleInventoryFilter(key)" 
+                    :class="['filter-button', { active: value }]"
+                >
+                    {{ key }}
+                </button>
+            </div>
+
+            <div v-if="inventory.length === 0" class="info-box">
+                No inventory data available.
+            </div>
+
+            <div v-else>
+                <div v-for="item in filteredInventory" :key="item.file_id" class="inventory-item">
+                    <div><strong>Filename:</strong> {{ item.filename }}</div>
+                    <div><strong>Path:</strong> {{ item.filepath }}</div>
+                    <div><strong>Size:</strong> {{ item.size_hr }}</div>
+                    <div><strong>Type:</strong> {{ item.mimetype }}</div>
+                    <div><strong>Status:</strong> {{ item.status }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Errors Panel -->
+        <div v-if="activeTab === 'errors'" class="panel">
+            <h2>Error Log</h2>
+
+            <div v-if="errors.length === 0" class="info-box">
+                No errors recorded.
+            </div>
+
+            <div v-else>
+                <div v-for="(error, index) in errors" :key="index" class="error-log info-box">
+                    <div><strong>File:</strong> {{ error.file_path }}</div>
+                    <div><strong>Error:</strong> {{ error.issue }}</div>
+                    <div><strong>Time:</strong> {{ formatTimestamp(error.timestamp) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div v-if="activeTab === 'logs'" class="panel">
+            <h2>System Logs</h2>
+            <pre><div v-for="(line, index) in logLines" :key="index" class="log-line">{{ line }}</div></pre>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                activeTab: 'dashboard',
+                logs: '',
+                logLines: [],
+                sections: [],
+                inventory: [],
+                errors: [],
+                stats: {},
+                sectionStats: {},
+                recentActivity: [],
+                refreshInterval: null,
+                sectionSearch: '',
+                inventorySearch: '',
+                sectionFilters: {
+                    'All': true,
+                    'Completed': false,
+                    'In Progress': false,
+                    'Pending': false,
+                    'Error': false
+                },
+                inventoryFilters: {
+                    'All': true,
+                    'New': false,
+                    'Updated': false,
+                    'Video': false
+                }
+            },
+            computed: {
+                filteredSections() {
+                    let filtered = this.sections;
+
+                    // Apply search filter
+                    if (this.sectionSearch) {
+                        const search = this.sectionSearch.toLowerCase();
+                        filtered = filtered.filter(section => 
+                            section.section_path.toLowerCase().includes(search)
+                        );
+                    }
+
+                    // Apply status filters
+                    if (!this.sectionFilters['All']) {
+                        if (this.sectionFilters['Completed']) {
+                            filtered = filtered.filter(section => section.status === 'completed');
+                        }
+                        if (this.sectionFilters['In Progress']) {
+                            filtered = filtered.filter(section => 
+                                ['counting', 'counted', 'indexing'].includes(section.status.toLowerCase())
+                            );
+                        }
+                        if (this.sectionFilters['Pending']) {
+                            filtered = filtered.filter(section => section.status === 'pending');
+                        }
+                        if (this.sectionFilters['Error']) {
+                            filtered = filtered.filter(section => section.status === 'error');
+                        }
+                    }
+
+                    return filtered;
+                },
+                filteredInventory() {
+                    let filtered = this.inventory;
+
+                    // Apply search filter
+                    if (this.inventorySearch) {
+                        const search = this.inventorySearch.toLowerCase();
+                        filtered = filtered.filter(item => 
+                            item.filename.toLowerCase().includes(search) || 
+                            item.filepath.toLowerCase().includes(search)
+                        );
+                    }
+
+                    // Apply type filters
+                    if (!this.inventoryFilters['All']) {
+                        if (this.inventoryFilters['New']) {
+                            filtered = filtered.filter(item => item.status === 'new');
+                        }
+                        if (this.inventoryFilters['Updated']) {
+                            filtered = filtered.filter(item => item.status === 'updated');
+                        }
+                        if (this.inventoryFilters['Video']) {
+                            filtered = filtered.filter(item => item.mimetype?.includes('video'));
+                        }
+                    }
+
+                    return filtered.slice(0, 100); // Limit to prevent browser slowdown
+                }
+            },
+            methods: {
+                fetchLogs() {
+                    axios.get('/api/logs')
+                        .then(response => {
+                            this.logs = response.data;
+                            this.logLines = this.logs.split('\n');
+                        })
+                        .catch(error => {
+                            console.error('Error fetching logs:', error);
+                        });
+                },
+                fetchSections() {
+                    axios.get('/api/sections')
+                        .then(response => {
+                            this.sections = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching sections:', error);
+                        });
+                },
+                fetchInventory() {
+                    axios.get('/api/inventory')
+                        .then(response => {
+                            this.inventory = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching inventory:', error);
+                        });
+                },
+                fetchErrors() {
+                    axios.get('/api/errors')
+                        .then(response => {
+                            this.errors = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching errors:', error);
+                        });
+                },
+                fetchStats() {
+                    axios.get('/api/stats')
+                        .then(response => {
+                            this.stats = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching stats:', error);
+                        });
+                },
+                fetchSectionStats() {
+                    axios.get('/api/section_stats')
+                        .then(response => {
+                            this.sectionStats = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching section stats:', error);
+                        });
+                },
+                fetchRecentActivity() {
+                    axios.get('/api/activity')
+                        .then(response => {
+                            this.recentActivity = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching recent activity:', error);
+                        });
+                },
+                getOverallProgress() {
+                    const totalSections = this.sectionStats.total || 1;
+                    const completedSections = this.sectionStats.completed || 0;
+                    return Math.round((completedSections / totalSections) * 100);
+                },
+                formatTimestamp(timestamp) {
+                    if (!timestamp) return 'N/A';
+                    return new Date(timestamp).toLocaleString();
+                },
+                formatNumber(num) {
+                    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                },
+                toggleSectionFilter(filter) {
+                    if (filter === 'All') {
+                        // If turning on 'All', turn off others
+                        if (!this.sectionFilters['All']) {
+                            this.sectionFilters = Object.keys(this.sectionFilters).reduce((acc, key) => {
+                                acc[key] = key === 'All';
+                                return acc;
+                            }, {});
+                        }
+                    } else {
+                        // If turning on any other filter, turn off 'All'
+                        this.sectionFilters[filter] = !this.sectionFilters[filter];
+                        this.sectionFilters['All'] = false;
+
+                        // If all filters are off, turn on 'All'
+                        const anyFilterOn = Object.keys(this.sectionFilters)
+                            .filter(key => key !== 'All')
+                            .some(key => this.sectionFilters[key]);
+
+                        if (!anyFilterOn) {
+                            this.sectionFilters['All'] = true;
+                        }
+                    }
+                },
+                toggleInventoryFilter(filter) {
+                    if (filter === 'All') {
+                        if (!this.inventoryFilters['All']) {
+                            this.inventoryFilters = Object.keys(this.inventoryFilters).reduce((acc, key) => {
+                                acc[key] = key === 'All';
+                                return acc;
+                            }, {});
+                        }
+                    } else {
+                        this.inventoryFilters[filter] = !this.inventoryFilters[filter];
+                        this.inventoryFilters['All'] = false;
+
+                        const anyFilterOn = Object.keys(this.inventoryFilters)
+                            .filter(key => key !== 'All')
+                            .some(key => this.inventoryFilters[key]);
+
+                        if (!anyFilterOn) {
+                            this.inventoryFilters['All'] = true;
+                        }
+                    }
+                },
+                startAutoRefresh() {
+                    this.refreshData();
+                    this.refreshInterval = setInterval(this.refreshData, 10000);
+                },
+                stopAutoRefresh() {
+                    clearInterval(this.refreshInterval);
+                },refreshData() {
+                    this.fetchLogs();
+                    this.fetchSections();
+                    this.fetchStats();
+                    this.fetchSectionStats();
+                    this.fetchRecentActivity();
+
+                    // Only fetch these when viewing respective tabs to reduce server load
+                    if (this.activeTab === 'inventory') {
+                        this.fetchInventory();
+                    }
+                    if (this.activeTab === 'errors') {
+                        this.fetchErrors();
+                    }
+                }
+            },
+            mounted() {
+                this.startAutoRefresh();
+            },
+            beforeDestroy() {
+                this.stopAutoRefresh();
+            },
+            watch: {
+                activeTab(newTab) {
+                    // Load tab-specific data when switching tabs
+                    if (newTab === 'inventory') {
+                        this.fetchInventory();
+                    } else if (newTab === 'errors') {
+                        this.fetchErrors();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+    """
+
+def initialize_templates():
+    """
+    Creates the index.html file in the templates directory.
+    """
+    from app.web import STATIC_DIR
+
+    # Create the templates directory if it doesn't exist
+    os.makedirs(STATIC_DIR, exist_ok=True)
+
+    # Write the Vue.js app to the index.html file
+    index_html_path = os.path.join(STATIC_DIR, "index.html")
+    with open(index_html_path, "w") as f:
+        f.write(create_index_html())
+
+    return index_html_path
