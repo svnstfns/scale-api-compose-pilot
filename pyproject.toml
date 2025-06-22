@@ -31,7 +31,6 @@ dependencies = [
     "python-dotenv>=0.19.0",
     "pyyaml>=6.0", 
     "websocket-client>=1.0.0",
-    "truenas-api-client @ git+https://github.com/truenas/api_client.git",
     "zeroconf>=0.131.0",
     "requests>=2.25.0",
     "keyring>=23.0.0",
@@ -59,6 +58,7 @@ Repository = "https://github.com/svnstfns/scale-api-compose-pilot.git"
 
 [project.scripts]
 scale-compose = "scale_api_compose_pilot.cli:main"
+scale-compose-check-path = "scale_api_compose_pilot.path_setup:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

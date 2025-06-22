@@ -11,6 +11,8 @@ from .manager import TrueNASDockerManager
 from .exceptions import TrueNASError
 from .discovery import discover_all, quick_discover
 from .setup_wizard import run_setup_wizard
+from .dependency_installer import ensure_dependencies
+from .path_setup import check_and_setup_path
 
 
 async def deploy_command(args):
@@ -166,6 +168,37 @@ async def validate_command(args):
         return 1
 
 
+def install_deps_command(args):
+    """Install missing dependencies."""
+    try:
+        print("📦 Checking and installing dependencies...")
+        success = ensure_dependencies()
+        
+        if success:
+            print("\n✅ All dependencies are ready!")
+            return 0
+        else:
+            print("\n❌ Some dependencies failed to install")
+            print("Please check the output above for manual installation instructions")
+            return 1
+            
+    except Exception as e:
+        print(f"❌ Dependency installation failed: {e}")
+        return 1
+
+
+def check_path_command(args):
+    """Check PATH setup for the CLI."""
+    try:
+        print("📏 Checking CLI PATH setup...")
+        guidance = check_and_setup_path()
+        print(guidance)
+        return 0
+    except Exception as e:
+        print(f"❌ PATH check failed: {e}")
+        return 1
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="TrueNAS Docker Management CLI")
@@ -202,6 +235,12 @@ def main():
     # Validate command
     validate_parser = subparsers.add_parser('validate', help='Validate TrueNAS connection')
     
+    # Install deps command
+    deps_parser = subparsers.add_parser('install-deps', help='Install missing dependencies')
+    
+    # Check PATH command
+    path_parser = subparsers.add_parser('check-path', help='Check CLI PATH setup')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -225,6 +264,10 @@ def main():
         return init_command(args)
     elif args.command == 'validate':
         return asyncio.run(validate_command(args))
+    elif args.command == 'install-deps':
+        return install_deps_command(args)
+    elif args.command == 'check-path':
+        return check_path_command(args)
     else:
         parser.print_help()
         return 1

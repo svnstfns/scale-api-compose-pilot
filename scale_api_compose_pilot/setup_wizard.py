@@ -21,6 +21,7 @@ except ImportError:
 from .discovery import TrueNASDiscovery, TrueNASSystem
 from .manager import TrueNASDockerManager
 from .exceptions import TrueNASConnectionError, TrueNASAuthenticationError
+from .dependency_installer import ensure_dependencies
 
 
 class SetupWizard:
@@ -41,6 +42,13 @@ class SetupWizard:
         print("=" * 50)
         
         try:
+            # Step 0: Ensure dependencies are installed
+            print("\n📦 Checking dependencies...")
+            if not ensure_dependencies():
+                print("❌ Failed to install required dependencies")
+                print("Please install manually and try again")
+                return False
+            
             # Step 1: Discover TrueNAS systems
             if not self._discover_truenas():
                 return False

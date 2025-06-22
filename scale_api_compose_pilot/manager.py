@@ -6,8 +6,23 @@ import os
 import yaml
 from typing import Dict, Optional
 import logging
-from truenas_api_client import Client
 from dotenv import load_dotenv
+
+# Handle TrueNAS API client import with auto-installation
+try:
+    from truenas_api_client import Client
+except ImportError:
+    print("🔧 TrueNAS API Client not found. Installing...")
+    from .dependency_installer import install_truenas_api_client_with_fallback
+    
+    if install_truenas_api_client_with_fallback():
+        from truenas_api_client import Client
+        print("✅ TrueNAS API Client ready!")
+    else:
+        print("❌ Failed to install TrueNAS API Client")
+        print("Please manually install with:")
+        print("   pip install git+https://github.com/truenas/api_client.git")
+        raise ImportError("TrueNAS API Client is required but not installed")
 
 from .exceptions import (
     TrueNASConnectionError, 
