@@ -1,0 +1,11 @@
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    environment:
+      - ENV=production
+    volumes:
+      - /host/html:/usr/share/nginx/html
+      - /host/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
