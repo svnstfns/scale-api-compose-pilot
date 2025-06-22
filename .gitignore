@@ -1,8 +1,9 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -19,8 +20,21 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Virtual environments
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
 .env
 .venv
 env/
@@ -29,40 +43,23 @@ ENV/
 env.bak/
 venv.bak/
 
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-
-# Testing
-.tox/
-.coverage
-.pytest_cache/
-htmlcov/
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Documentation
-docs/_build/
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 # Project specific
-.env.local
-*.log
-legacy/
+*.bak
+*.tmp
 
-# Poetry
-poetry.lock
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

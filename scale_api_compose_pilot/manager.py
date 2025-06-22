@@ -8,20 +8,27 @@ from typing import Dict, Optional
 import logging
 from dotenv import load_dotenv
 
-# Handle TrueNAS API client import with auto-installation
+# Handle TrueNAS API client import with smart installation detection
 try:
     from truenas_api_client import Client
 except ImportError:
-    print("🔧 TrueNAS API Client not found. Installing...")
-    from .dependency_installer import install_truenas_api_client_with_fallback
+    from .installation_detector import detect_installation, get_installation_guidance
+    installation_type, should_auto_install = detect_installation()
     
-    if install_truenas_api_client_with_fallback():
-        from truenas_api_client import Client
-        print("✅ TrueNAS API Client ready!")
+    if should_auto_install:
+        print("🔧 TrueNAS API Client not found. Installing...")
+        from .dependency_installer import install_truenas_api_client_with_fallback
+        
+        if install_truenas_api_client_with_fallback():
+            from truenas_api_client import Client
+            print("✅ TrueNAS API Client ready!")
+        else:
+            print("❌ Failed to install TrueNAS API Client")
+            print(get_installation_guidance(installation_type))
+            raise ImportError("TrueNAS API Client is required but not installed")
     else:
-        print("❌ Failed to install TrueNAS API Client")
-        print("Please manually install with:")
-        print("   pip install git+https://github.com/truenas/api_client.git")
+        print("❌ TrueNAS API Client not found")
+        print(get_installation_guidance(installation_type))
         raise ImportError("TrueNAS API Client is required but not installed")
 
 from .exceptions import (

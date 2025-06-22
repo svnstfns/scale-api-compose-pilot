@@ -9,7 +9,7 @@ authors = [
     {name = "sst", email = "svnstfns@gmail.com"}
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.8"
 keywords = ["truenas", "scale", "docker", "compose", "api", "automation", "pilot", "nas"]
 classifiers = [
