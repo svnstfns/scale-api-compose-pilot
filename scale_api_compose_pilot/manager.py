@@ -1,4 +1,5 @@
 
+
 """
 TrueNAS Docker Manager - Main management class.
 """
@@ -99,13 +100,8 @@ class TrueNASDockerManager:
         logger.info(f"Connecting to {uri}")
 
         try:
-            # Configure SSL context to handle self-signed certificates
-            import ssl
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-
-            self.client = Client(uri=uri, ssl=ssl_context)
+            # Create client with SSL verification disabled for self-signed certificates
+            self.client = Client(uri=uri, verify_ssl=False)
             self.client.__enter__()
             logger.info("WebSocket connection established")
             self.connected = True
