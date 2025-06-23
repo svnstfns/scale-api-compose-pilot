@@ -1,6 +1,8 @@
 
 
-# Scale API Compose Pilot
+
+
+Scale API Compose Pilot
 
 [![CI/CD](https://github.com/svnstfns/scale-api-compose-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/svnstfns/scale-api-compose-pilot/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/scale-api-compose-pilot.svg)](https://badge.fury.io/py/scale-api-compose-pilot)
@@ -23,38 +25,56 @@ Pilot Docker Compose workloads to TrueNAS Scale via WebSocket API - AI-friendly 
 
 ## Installation
 
-### Prerequisites
+### 📦 Quick Install
 
-The TrueNAS API client is required but not available on PyPI. Install it first:
+```bash
+# Install from PyPI (when published)
+pip install scale-api-compose-pilot
+
+# Or install from source
+git clone https://github.com/svnstfns/scale-api-compose-pilot.git
+cd scale-api-compose-pilot
+pip install -e .
+```
+
+**Note**: The TrueNAS API client will be automatically installed if needed. If automatic installation fails, you can manually install it:
 
 ```bash
 pip install git+https://github.com/truenas/api_client.git
 ```
 
-### From PyPI (when published)
-
-```bash
-pip install scale-api-compose-pilot
-```
-
-### From Source
-
-```bash
-git clone https://github.com/svnstfns/scale-api-compose-pilot.git
-cd scale-api-compose-pilot
-pip install git+https://github.com/truenas/api_client.git  # Install API client first
-pip install -e .
-```
-
 ## Quick Start
 
-### Environment Setup
+### 🚀 Automatic Setup (Recommended)
 
-Create a `.env` file:
+The easiest way to get started is with our interactive setup wizard:
+
+```bash
+scale-compose init
+```
+
+This will:
+- 🔍 **Auto-discover** TrueNAS systems on your network
+- 🔑 **Guide you** through API key creation
+- ✅ **Validate** your connection
+- 💾 **Save** your configuration
+
+### Manual Setup (Optional)
+
+If you prefer manual configuration, create a `.env` file:
 
 ```env
-TRUENAS-HOST=your-truenas-host.local
-TRUENAS-API-KEY=your-api-key-here
+TRUENAS_HOST=your-truenas-host.local
+TRUENAS_API_KEY=your-api-key-here
+```
+
+Or use the config file at `~/.scale-compose`:
+
+```json
+{
+  "truenas_host": "your-truenas-host.local",
+  "api_key": "your-api-key-here"
+}
 ```
 
 ### CLI Usage
@@ -214,13 +234,13 @@ pytest
 ### Code Formatting
 
 ```bash
-black truenas_docker_manager/
+black scale_api_compose_pilot/
 ```
 
 ### Type Checking
 
 ```bash
-mypy truenas_docker_manager/
+mypy scale_api_compose_pilot/
 ```
 
 ## Contributing
