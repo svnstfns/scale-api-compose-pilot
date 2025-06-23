@@ -4,7 +4,7 @@ TrueNAS Docker Manager - Main management class.
 
 import os
 import yaml
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Any
 import logging
 from dotenv import load_dotenv
 
@@ -37,6 +37,7 @@ from .exceptions import (
     TrueNASAPIError,
     DockerComposeError
 )
+from .config import get_config
 
 # Load environment variables
 load_dotenv()
@@ -52,18 +53,35 @@ class TrueNASDockerManager:
         Initialize TrueNAS Docker Manager.
         
         Args:
-            host: TrueNAS hostname/IP (defaults to TRUENAS-HOST env var)
-            api_key: TrueNAS API key (defaults to TRUENAS-API-KEY env var)
+            host: TrueNAS hostname/IP (defaults to config file, then env var)
+            api_key: TrueNAS API key (defaults to config file, then env var)
         """
-        self.host = (host or os.getenv('TRUENAS_HOST', '')).replace('https://', '').replace('http://', '')
-        self.api_key = api_key or os.getenv('TRUENAS_API_KEY')
+        config = get_config()
+        
+        # Priority: parameter > env var > config file
+        self.host = (
+            host or 
+            os.getenv('TRUENAS_HOST') or 
+            config.truenas_host or 
+            ''
+        ).replace('https://', '').replace('http://', '')
+        
+        self.api_key = (
+            api_key or 
+            os.getenv('TRUENAS_API_KEY') or 
+            config.api_key or 
+            ''
+        )
+        
+        self.timeout = config.timeout
+        self.verify_ssl = config.verify_ssl
         self.client = None
         self.connected = False
         
         if not self.host:
-            raise ValueError("TrueNAS host must be provided via parameter or TRUENAS_HOST environment variable")
+            raise ValueError("TrueNAS host must be provided via parameter, config file, or TRUENAS_HOST environment variable")
         if not self.api_key:
-            raise ValueError("TrueNAS API key must be provided via parameter or TRUENAS_API_KEY environment variable")
+            raise ValueError("TrueNAS API key must be provided via parameter, config file, or TRUENAS_API_KEY environment variable")
         
     async def connect(self) -> bool:
         """
@@ -112,7 +130,7 @@ class TrueNASDockerManager:
             logger.error(f"Authentication failed: {e}")
             raise TrueNASAuthenticationError(f"Authentication failed: {e}")
     
-    async def call_api(self, method: str, *args):
+    async def call_api(self, method: str, *args) -> Any:
         """
         Make API call to TrueNAS.
         
@@ -134,7 +152,7 @@ class TrueNASDockerManager:
         except Exception as e:
             raise TrueNASAPIError(f"API call '{method}' failed: {e}")
     
-    async def list_apps(self) -> list:
+    async def list_apps(self) -> List[Dict[str, Any]]:
         """
         List all installed apps/containers.
         
@@ -159,7 +177,7 @@ class TrueNASDockerManager:
                 return app
         return None
     
-    async def create_app(self, app_config: Dict):
+    async def create_app(self, app_config: Dict[str, Any]) -> Any:
         """
         Create a new app from configuration.
         
@@ -171,7 +189,7 @@ class TrueNASDockerManager:
         """
         return await self.call_api("app.create", app_config)
     
-    async def start_app(self, app_name: str):
+    async def start_app(self, app_name: str) -> Any:
         """
         Start an app.
         
@@ -183,7 +201,7 @@ class TrueNASDockerManager:
         """
         return await self.call_api("app.start", app_name)
     
-    async def stop_app(self, app_name: str):
+    async def stop_app(self, app_name: str) -> Any:
         """
         Stop an app.
         
@@ -195,7 +213,7 @@ class TrueNASDockerManager:
         """
         return await self.call_api("app.stop", app_name)
     
-    async def delete_app(self, app_name: str):
+    async def delete_app(self, app_name: str) -> Any:
         """
         Delete an app.
         
@@ -207,7 +225,7 @@ class TrueNASDockerManager:
         """
         return await self.call_api("app.delete", app_name)
     
-    async def update_app(self, app_name: str, app_config: Dict):
+    async def update_app(self, app_name: str, app_config: Dict[str, Any]) -> Any:
         """
         Update an existing app.
         
@@ -220,7 +238,7 @@ class TrueNASDockerManager:
         """
         return await self.call_api("app.update", app_name, app_config)
     
-    async def deploy_compose_stack(self, compose_file_path: str, app_name: str):
+    async def deploy_compose_stack(self, compose_file_path: str, app_name: str) -> Any:
         """
         Deploy a Docker Compose stack as a TrueNAS app.
         
@@ -254,7 +272,7 @@ class TrueNASDockerManager:
             return await self.create_app(app_config)
     
     @staticmethod
-    def _convert_compose_to_app_config(compose_data: Dict, app_name: str) -> Dict:
+    def _convert_compose_to_app_config(compose_data: Dict[str, Any], app_name: str) -> Dict[str, Any]:
         """
         Convert Docker Compose format to TrueNAS app configuration.
         
@@ -328,7 +346,7 @@ class TrueNASDockerManager:
         
         return app_config
     
-    async def close(self):
+    async def close(self) -> None:
         """Close API client connection."""
         if self.client:
             try:
@@ -339,12 +357,12 @@ class TrueNASDockerManager:
             finally:
                 self.connected = False
     
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'TrueNASDockerManager':
         """Async context manager entry."""
         await self.connect()
         await self.authenticate()
         return self
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.close()

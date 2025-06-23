@@ -6,6 +6,7 @@ import os
 import asyncio
 import argparse
 from pathlib import Path
+from typing import List, Dict, Any, Optional
 
 from .manager import TrueNASDockerManager
 from .exceptions import TrueNASError
@@ -13,9 +14,10 @@ from .discovery import discover_all, quick_discover
 from .setup_wizard import run_setup_wizard
 from .dependency_installer import ensure_dependencies
 from .path_setup import check_and_setup_path
+from . import __version__
 
 
-async def deploy_command(args):
+async def deploy_command(args: argparse.Namespace) -> int:
     """Deploy a Docker Compose stack to TrueNAS."""
     try:
         async with TrueNASDockerManager() as manager:
@@ -31,7 +33,7 @@ async def deploy_command(args):
         return 1
 
 
-async def list_command(args):
+async def list_command(args: argparse.Namespace) -> int:
     """List all apps on TrueNAS."""
     try:
         async with TrueNASDockerManager() as manager:
@@ -48,7 +50,7 @@ async def list_command(args):
         return 1
 
 
-async def start_command(args):
+async def start_command(args: argparse.Namespace) -> int:
     """Start an app."""
     try:
         async with TrueNASDockerManager() as manager:
@@ -64,7 +66,7 @@ async def start_command(args):
         return 1
 
 
-async def stop_command(args):
+async def stop_command(args: argparse.Namespace) -> int:
     """Stop an app."""
     try:
         async with TrueNASDockerManager() as manager:
@@ -80,7 +82,7 @@ async def stop_command(args):
         return 1
 
 
-async def delete_command(args):
+async def delete_command(args: argparse.Namespace) -> int:
     """Delete an app."""
     try:
         async with TrueNASDockerManager() as manager:
@@ -103,7 +105,7 @@ async def delete_command(args):
         return 1
 
 
-def discover_command(args):
+def discover_command(args: argparse.Namespace) -> int:
     """Discover TrueNAS systems on the network."""
     try:
         print("🔍 Discovering TrueNAS Scale systems...")
@@ -129,7 +131,7 @@ def discover_command(args):
         return 1
 
 
-def init_command(args):
+def init_command(args: argparse.Namespace) -> int:
     """Run the setup wizard."""
     try:
         print("🚀 Starting Scale API Compose Pilot Setup Wizard...")
@@ -140,7 +142,7 @@ def init_command(args):
         return 1
 
 
-async def validate_command(args):
+async def validate_command(args: argparse.Namespace) -> int:
     """Validate connection to TrueNAS."""
     try:
         print("🔧 Validating TrueNAS connection...")
@@ -168,7 +170,7 @@ async def validate_command(args):
         return 1
 
 
-def install_deps_command(args):
+def install_deps_command(args: argparse.Namespace) -> int:
     """Install missing dependencies."""
     try:
         print("📦 Checking and installing dependencies...")
@@ -187,7 +189,7 @@ def install_deps_command(args):
         return 1
 
 
-def check_path_command(args):
+def check_path_command(args: argparse.Namespace) -> int:
     """Check PATH setup for the CLI."""
     try:
         print("📏 Checking CLI PATH setup...")
@@ -199,9 +201,54 @@ def check_path_command(args):
         return 1
 
 
-def main():
+def version_command(args: argparse.Namespace) -> int:
+    """Show version information."""
+    print(f"Scale API Compose Pilot v{__version__}")
+    return 0
+
+
+def diagnostics_command(args: argparse.Namespace) -> int:
+    """Run diagnostic checks."""
+    print("🔍 Running diagnostics...")
+    print(f"✅ Version: {__version__}")
+    print(f"✅ Python: {os.sys.version}")
+    
+    # Check environment variables
+    host = os.getenv('TRUENAS_HOST')
+    api_key = os.getenv('TRUENAS_API_KEY')
+    
+    print(f"🔧 Environment:")
+    print(f"  - TRUENAS_HOST: {'✅ Set' if host else '❌ Not set'}")
+    print(f"  - TRUENAS_API_KEY: {'✅ Set' if api_key else '❌ Not set'}")
+    
+    # Check dependencies
+    print("📦 Dependencies:")
+    try:
+        import truenas_api_client
+        print("  - TrueNAS API Client: ✅ Available")
+    except ImportError:
+        print("  - TrueNAS API Client: ❌ Not installed")
+    
+    try:
+        import zeroconf
+        print("  - Zeroconf: ✅ Available")
+    except ImportError:
+        print("  - Zeroconf: ❌ Not installed")
+    
+    try:
+        import yaml
+        print("  - PyYAML: ✅ Available")
+    except ImportError:
+        print("  - PyYAML: ❌ Not installed")
+    
+    print("\n💡 For connection issues, run: scale-compose validate")
+    return 0
+
+
+def main() -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="TrueNAS Docker Management CLI")
+    parser.add_argument('--version', action='store_true', help='Show version information')
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
     # Deploy command
@@ -241,7 +288,14 @@ def main():
     # Check PATH command
     path_parser = subparsers.add_parser('check-path', help='Check CLI PATH setup')
     
+    # Diagnostics command
+    diag_parser = subparsers.add_parser('diagnostics', help='Run diagnostic checks')
+    
     args = parser.parse_args()
+    
+    # Handle version flag
+    if args.version:
+        return version_command(args)
     
     if not args.command:
         parser.print_help()
@@ -268,6 +322,8 @@ def main():
         return install_deps_command(args)
     elif args.command == 'check-path':
         return check_path_command(args)
+    elif args.command == 'diagnostics':
+        return diagnostics_command(args)
     else:
         parser.print_help()
         return 1

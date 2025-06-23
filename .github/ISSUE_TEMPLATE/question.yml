@@ -1,0 +1,61 @@
+name: Question
+description: Ask a question about using scale-api-compose-pilot
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your question! Please help us understand what you need help with.
+        
+        **Before asking**: Please check the [README](https://github.com/svnstfns/scale-api-compose-pilot#readme) and existing [issues](https://github.com/svnstfns/scale-api-compose-pilot/issues) first.
+        
+  - type: textarea
+    id: question
+    attributes:
+      label: What is your question?
+      description: Please be as specific as possible about what you're trying to do and what you need help with.
+    validations:
+      required: true
+      
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish? What have you already tried?
+      placeholder: |
+        I'm trying to...
+        I've already tried...
+        I expected...
+        
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please provide details about your setup
+      placeholder: |
+        - OS: [e.g. macOS 12.0]
+        - Python version: [e.g. 3.11]
+        - Package version: [e.g. 0.1.0]
+        - TrueNAS version: [e.g. 24.10]
+        
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Pre-submission checklist
+      description: Have you done these steps before asking?
+      options:
+        - label: I searched existing issues and discussions
+          required: true
+        - label: I checked the documentation
+          required: true
+        - label: I tried running `scale-compose diagnostics`
+          
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/svnstfns/scale-api-compose-pilot/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

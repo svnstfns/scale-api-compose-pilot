@@ -2,6 +2,14 @@
 
 # Scale API Compose Pilot
 
+[![CI/CD](https://github.com/svnstfns/scale-api-compose-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/svnstfns/scale-api-compose-pilot/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/scale-api-compose-pilot.svg)](https://badge.fury.io/py/scale-api-compose-pilot)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
+
 Pilot Docker Compose workloads to TrueNAS Scale via WebSocket API - AI-friendly automation tool.
 
 ## Features
