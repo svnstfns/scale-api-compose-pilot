@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional
 
 from .manager import TrueNASDockerManager
 from .exceptions import TrueNASError
-from .discovery import discover_all, quick_discover
+from .discovery import scan_all, quick_scan
 from .setup_wizard import run_setup_wizard
 from .dependency_installer import ensure_dependencies
 from .path_setup import check_and_setup_path
@@ -109,7 +109,7 @@ def discover_command(args: argparse.Namespace) -> int:
     """Discover TrueNAS systems on the network."""
     try:
         print("🔍 Discovering TrueNAS Scale systems...")
-        systems = discover_all(timeout=args.timeout)
+        systems = scan_all(timeout=args.timeout)
         
         if systems:
             print(f"\n✅ Found {len(systems)} TrueNAS system(s):")

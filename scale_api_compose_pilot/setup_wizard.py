@@ -18,7 +18,7 @@ try:
 except ImportError:
     KEYRING_AVAILABLE = False
 
-from .discovery import TrueNASDiscovery, TrueNASSystem
+from .discovery import TrueNASScanner, TrueNASSystem
 from .manager import TrueNASDockerManager
 from .exceptions import TrueNASConnectionError, TrueNASAuthenticationError
 from .dependency_installer import ensure_dependencies
@@ -86,8 +86,8 @@ class SetupWizard:
         
         # Check if user wants to skip discovery
         if self._ask_yes_no("Do you want to auto-discover TrueNAS systems? (y/n): "):
-            discovery = TrueNASDiscovery(timeout=5.0)
-            systems = discovery.discover_systems()
+            scanner = TrueNASScanner(timeout=5.0)
+            systems = scanner.scan_lan_for_truenas()
             
             if systems:
                 print(f"\n✅ Found {len(systems)} TrueNAS system(s):")
@@ -131,8 +131,8 @@ class SetupWizard:
                 # Test basic connectivity
                 print(f"Testing connection to {host}...")
                 
-                discovery = TrueNASDiscovery()
-                if discovery.verify_system(host):
+                scanner = TrueNASScanner()
+                if scanner.verify_system(host):
                     print("✅ TrueNAS system verified!")
                     self.config['host'] = host
                     self.config['web_url'] = f"https://{host}"
